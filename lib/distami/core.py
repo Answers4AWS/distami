@@ -19,6 +19,7 @@ import boto
 from boto import ec2
 
 from distami.exceptions import * 
+from distami import utils 
 
 pp = pprint.PrettyPrinter(depth=2)
 
@@ -32,19 +33,8 @@ class Distami(object):
         self._ami_region = ami_region
         
         log.info("Looking for AMI %s in region %s", self._ami_id, self._ami_region)
-        self._conn = ec2.connect_to_region(self._ami_region)
-        try:
-            images = self._conn.get_all_images(self._ami_id)
-        except boto.exception.EC2ResponseError:
-            msg = 'Could not find AMI %s in region %s' % (self._ami_id, self._ami_region)
-            raise DistamiException(msg)
-        
-        log.debug("Found AMIs: %s", images)
-        if len(images) != 1:
-            msg = "Somehow more than 1 AMI was detected - this is a weird error"
-            raise DistamiException(msg)
-            
-        self._image = images[0]
+        self._conn = ec2.connect_to_region(self._ami_region)            
+        self._image = utils.get_ami(self._conn, self._ami_id)
         log.debug('AMI Details: %s', vars(self._image))
         if self._image.state != 'available':
             msg = 'AMI %s is not available - current state is: %s' % (self._ami_id, self._image.state)
@@ -90,16 +80,44 @@ class Distami(object):
     
     
     def make_snapshot_public(self):
-        pass
+        ''' Makes a snapshot public '''
+        
+        snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
+        log.debug('Sanpshot details: %s', vars(snapshot))
+        return snapshot.share(groups=['all'])
     
-    def make_snapshot_private(self):
-        # TODO - reverse of public
-        pass
+    
+    def make_snapshot_non_public(self):
+        ''' Removes the 'all' group permission from the snapshot '''
+        
+        snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
+        log.debug('Sanpshot details: %s', vars(snapshot))
+        return snapshot.unshare(groups=['all'])
+
 
     def copy_to_region(self, region):
-        dest_conn = ec2.connect_to_region(self.region)
-        x = dest_conn.copy_image(self._ami_id, self._ami_region)
-        pp.pprint(x)
+        ''' Copies this AMI to another region '''
+        
+        dest_conn = ec2.connect_to_region(region)
+        log.info('Copying AMI to %s...', region)
+        cp_ami = dest_conn.copy_image(self._ami_region, self._ami_id, self._image.name, self._image.description)
+        copied_ami_id = cp_ami.image_id
+        
+        # Wait for AMI to finish copying before returning
+        copied_image = utils.wait_for_ami_to_be_available(dest_conn, copied_ami_id)
+        
+        # Copy AMI tags to new AMI
+        log.info('Copying AMI tags...')
+        dest_conn.create_tags(copied_ami_id, self._image.tags)
+        
+        # Also copy snapshot tags to new snapshot
+        log.info('Copying Snapshot tags...')
+        copied_snapshot_id = copied_image.block_device_mapping['/dev/sda1'].snapshot_id
+        snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
+        dest_conn.create_tags(copied_snapshot_id, snapshot.tags)
+
+        log.info('Copy complete')
+        return copied_ami_id
         
         
      
@@ -112,17 +130,17 @@ class Logging(object):
         ''' Configure the logging format and verbosity '''
         
         # Configure our logging output
-        if verbosity >= 3:
+        if verbosity >= 2:
             logging.basicConfig(level=logging.DEBUG, format=self._log_detailed_format, datefmt='%F %T')
         elif verbosity >= 1:
-            logging.basicConfig(level=logging.INFO, format=self._log_simple_format, datefmt='%F %T')
+            logging.basicConfig(level=logging.INFO, format=self._log_detailed_format, datefmt='%F %T')
         else:
-            logging.basicConfig(format=self._log_simple_format, datefmt='%F %T')
+            logging.basicConfig(level=logging.INFO, format=self._log_simple_format, datefmt='%F %T')
     
         # Configure Boto's logging output
         if verbosity >= 4:
             logging.getLogger('boto').setLevel(logging.DEBUG)
-        elif verbosity >= 2:
+        elif verbosity >= 3:
             logging.getLogger('boto').setLevel(logging.INFO)
         else:
             logging.getLogger('boto').setLevel(logging.CRITICAL)    
