@@ -75,7 +75,7 @@ def wait_for_ami_to_be_available(conn, ami_id):
     log.debug('AMI details: %s', vars(ami))
     
     while ami.state != 'available':
-        log.info("Waiting for AMI '%s' to become available", ami_id)
+        log.info("%s in %s not available, waiting...", ami_id, conn.region.name)
         time.sleep(30)
         ami = get_ami(conn, ami_id)
         

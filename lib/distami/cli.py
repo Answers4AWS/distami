@@ -47,10 +47,16 @@ def copy(ami_region_pair):
 
 def run():
     parser = argparse.ArgumentParser(description='Distributes an AMI by making it public.')
-    parser.add_argument('ami_id', metavar='AMI_ID', help='the source AMI ID to distribute. E.g. ami-1234abcd')
-    parser.add_argument('--region', metavar='REGION', help='the region the AMI is in (default is current region of EC2 instance this is running on). E.g. us-east-1')
-    parser.add_argument('-p', '--parallel', action='store_true', default=False, help='Perform each copy to another region in parallel. The default is in serial which can take a long time')
-    parser.add_argument('--verbose', '-v', action='count', help='enable verbose output (-vvv for more)')
+    parser.add_argument('ami_id', metavar='AMI_ID', 
+                        help='the source AMI ID to distribute. E.g. ami-1234abcd')
+    parser.add_argument('--region', metavar='REGION', 
+                        help='the region the AMI is in (default is current region of EC2 instance this is running on). E.g. us-east-1')
+    parser.add_argument('--to', metavar='REGIONS', 
+                        help='comma-separated list of regions to copy the AMI to. The default is all regions. E.g. us-east-1,us-west-1,us-west-2')
+    parser.add_argument('-p', '--parallel', action='store_true', default=False, 
+                        help='Perform each copy to another region in parallel. The default is in serial which can take a long time')
+    parser.add_argument('--verbose', '-v', action='count', 
+                        help='enable verbose output (-vvv for more)')
     args = parser.parse_args()
     
     Logging().configure(args.verbose)
@@ -76,7 +82,12 @@ def run():
         distami.make_ami_public()
         distami.make_snapshot_public()
         
-        to_regions = utils.get_regions_to_copy_to(ami_region)
+        if args.to and args.to != 'all':
+            # TODO It is probably worth sanity checking this for typos
+            to_regions = args.to.split(',')
+        else:
+            to_regions = utils.get_regions_to_copy_to(ami_region)
+        
         if args.parallel:
             # Get input to copy function 
             f = lambda x,y: [x, y]
@@ -84,7 +95,7 @@ def run():
             log.debug(pairs)
 
             # Copy to regions in parallel
-            log.info('Copying to regions in parallel. Hold on to your hats...')
+            log.info('Copying in parallel. Hold on to your hats...')
             pool = Pool(processes=8)
             pool.map(copy, pairs)
             pool.close()

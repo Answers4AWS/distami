@@ -15,7 +15,6 @@
 import logging
 import pprint
 
-import boto
 from boto import ec2
 
 from distami.exceptions import * 
@@ -46,17 +45,18 @@ class Distami(object):
         log.debug('Block device mapping for /dev/sda1: %s', vars(bdm))
         self._snapshot_id = bdm.snapshot_id
 
-        log.info("Found AMI '%s' with snapshot '%s'", self._ami_id, self._snapshot_id)
+        log.info("Found AMI %s with snapshot %s", self._ami_id, self._snapshot_id)
 
     
     def make_ami_public(self):
         ''' Adds the 'all' group permission to the AMI, making it publicly accessible '''
         
+        log.info('Making AMI %s public', self._ami_id)
+
         if 'groups' in self._launch_perms and any("all" in groups for groups in self._launch_perms['groups']):
             log.debug('AMI already public, nothing to do')
             return True
         
-        log.info('Making AMI %s public', self._ami_id)
         res = self._image.set_launch_permissions(group_names='all')
         self._launch_perms = self._image.get_launch_permissions()
         return res
@@ -65,8 +65,9 @@ class Distami(object):
     def make_ami_non_public(self):
         ''' Removes the 'all' group permission from the AMI '''
 
+        log.info('Making AMI %s non-public', self._ami_id)
+
         if 'groups' in self._launch_perms and any("all" in groups for groups in self._launch_perms['groups']):
-            log.info('Making AMI %s non-public', self._ami_id)
             res = self._image.remove_launch_permissions(group_names='all')
             self._launch_perms = self._image.get_launch_permissions()
             return res
@@ -99,7 +100,7 @@ class Distami(object):
         ''' Copies this AMI to another region '''
         
         dest_conn = ec2.connect_to_region(region)
-        log.info('Copying AMI to %s...', region)
+        log.info('Copying AMI to %s', region)
         cp_ami = dest_conn.copy_image(self._ami_region, self._ami_id, self._image.name, self._image.description)
         copied_ami_id = cp_ami.image_id
         
@@ -107,13 +108,13 @@ class Distami(object):
         copied_image = utils.wait_for_ami_to_be_available(dest_conn, copied_ami_id)
         
         # Copy AMI tags to new AMI
-        log.info('Copying AMI tags...')
+        log.info('Copying tags to %s in %s', copied_ami_id, region)
         dest_conn.create_tags(copied_ami_id, self._image.tags)
         
         # Also copy snapshot tags to new snapshot
-        log.info('Copying snapshot tags...')
         copied_snapshot_id = copied_image.block_device_mapping['/dev/sda1'].snapshot_id
         snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
+        log.info('Copying tags to %s in %s', copied_snapshot_id, region)
         dest_conn.create_tags(copied_snapshot_id, snapshot.tags)
 
         log.info('Copy to %s complete', region)
