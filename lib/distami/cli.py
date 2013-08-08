@@ -58,10 +58,15 @@ def run():
     try:
         distami = Distami(args.ami_id, ami_region)
         distami.make_ami_public()
-        distami.make_snapshot_public()
+        distami.make_ami_public()
+        distami.make_ami_non_public()
+        distami.make_ami_public()
+        distami.make_ami_non_public()
+        distami.make_ami_non_public()
+        #distami.make_snapshot_public()
         
-        regions_to_copy_to = utils.get_regions_to_copy_to(ami_region)
-        print regions_to_copy_to
+        #regions_to_copy_to = utils.get_regions_to_copy_to(ami_region)
+        #print regions_to_copy_to
         
     except DistamiException as e:
         _fail(e.message)

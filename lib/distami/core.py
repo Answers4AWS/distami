@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import logging
+import pprint
 
 import boto
 from boto import ec2
 
 from distami.exceptions import * 
 
+pp = pprint.PrettyPrinter(depth=2)
 
 __all__ = ('Distami', 'Logging')
 log = logging.getLogger(__name__)
@@ -30,9 +32,9 @@ class Distami(object):
         self._ami_region = ami_region
         
         log.info("Looking for AMI %s in region %s", self._ami_id, self._ami_region)
-        conn = ec2.connect_to_region(self._ami_region)
+        self._conn = ec2.connect_to_region(self._ami_region)
         try:
-            images = conn.get_all_images(self._ami_id)
+            images = self._conn.get_all_images(self._ami_id)
         except boto.exception.EC2ResponseError:
             msg = 'Could not find AMI %s in region %s' % (self._ami_id, self._ami_region)
             raise DistamiException(msg)
@@ -43,15 +45,49 @@ class Distami(object):
             raise DistamiException(msg)
             
         self._image = images[0]
-        self._launch_perms = self._image.get_launch_permissions()
-        log.info("Launch perms: %s", self._launch_perms)
+        log.debug('AMI Details: %s', vars(self._image))
+        if self._image.state != 'available':
+            msg = 'AMI %s is not available - current state is: %s' % (self._ami_id, self._image.state)
+            raise DistamiException(msg)
         
-    def make_ami_public(self):
-        pass
+        # Get current launch permissions
+        self._launch_perms = self._image.get_launch_permissions()
+        log.debug("Current launch permissions: %s", self._launch_perms)
+        
+        # Figure out the underlying snapshot
+        bdm = self._image.block_device_mapping['/dev/sda1']
+        log.debug('Block device mapping for /dev/sda1: %s', vars(bdm))
+        self._snapshot_id = bdm.snapshot_id
+
+        log.info("Found AMI '%s' with snapshot '%s'", self._ami_id, self._snapshot_id)
+
     
-    def make_ami_private(self):
-        # TODO - reverse of public
-        pass
+    def make_ami_public(self):
+        ''' Adds the 'all' group permission to the AMI, making it publicly accessible '''
+        
+        if 'groups' in self._launch_perms and any("all" in groups for groups in self._launch_perms['groups']):
+            log.info('AMI already public, nothing to do')
+            return True
+        
+        log.info('Making AMI %s public', self._ami_id)
+        res = self._image.set_launch_permissions(group_names='all')
+        self._launch_perms = self._image.get_launch_permissions()
+        return res
+    
+    
+    def make_ami_non_public(self):
+        ''' Removes the 'all' group permission from the AMI '''
+
+        if 'groups' in self._launch_perms and any("all" in groups for groups in self._launch_perms['groups']):
+            log.info('Making AMI %s non-public', self._ami_id)
+            res = self._image.remove_launch_permissions(group_names='all')
+            self._launch_perms = self._image.get_launch_permissions()
+            return res
+        
+        log.info('AMI is already not public')
+        return True    
+    
+    
     
     def make_snapshot_public(self):
         pass
@@ -61,7 +97,10 @@ class Distami(object):
         pass
 
     def copy_to_region(self, region):
-        pass
+        dest_conn = ec2.connect_to_region(self.region)
+        x = dest_conn.copy_image(self._ami_id, self._ami_region)
+        pp.pprint(x)
+        
         
      
 class Logging(object):
