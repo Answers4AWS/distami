@@ -4,14 +4,40 @@ Distributes an Amazon Machine Image (AMI) by making it public
 
 
 ## Usage
+```
+usage: distami [-h] [--region REGION] [--to REGIONS] [-p] [--verbose] AMI_ID
 
-From an EC2 instance such as Aminator:
+Distributes an AMI by making it public.
 
-    distami ami-abcd1234
+positional arguments:
+  AMI_ID           the source AMI ID to distribute. E.g. ami-1234abcd
 
-or from your laptop
+optional arguments:
+  -h, --help       show this help message and exit
+  --region REGION  the region the AMI is in (default is current region of EC2
+                   instance this is running on). E.g. us-east-1
+  --to REGIONS     comma-separated list of regions to copy the AMI to. The
+                   default is all regions. E.g. us-east-1,us-west-1,us-west-2
+  -p, --parallel   Perform each copy to another region in parallel. The
+                   default is in serial which can take a long time
+  --verbose, -v    enable verbose output (-vvv for more)
+```
 
-    distribute --region us-east-1 ami-abcd1234
+
+## Examples 
+
+Copy an AMI to all regions in parallel from an EC2 instance such as Aminator:
+
+    distami -p ami-abcd1234
+
+Copy AMI in `us-east-1` to `us-west-1`
+
+    distribute --region us-east-1 ami-abcd1234 --to us-west-1
+
+
+## Installation
+
+Working on it... will be done through pip
 
 
 ## About Answers for AWS
