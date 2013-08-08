@@ -34,11 +34,8 @@ class Distami(object):
         
         log.info("Looking for AMI %s in region %s", self._ami_id, self._ami_region)
         self._conn = ec2.connect_to_region(self._ami_region)            
-        self._image = utils.get_ami(self._conn, self._ami_id)
-        log.debug('AMI Details: %s', vars(self._image))
-        if self._image.state != 'available':
-            msg = 'AMI %s is not available - current state is: %s' % (self._ami_id, self._image.state)
-            raise DistamiException(msg)
+        self._image = utils.wait_for_ami_to_be_available(self._conn, self._ami_id)
+        log.debug('AMI details: %s', vars(self._image))
         
         # Get current launch permissions
         self._launch_perms = self._image.get_launch_permissions()
@@ -56,7 +53,7 @@ class Distami(object):
         ''' Adds the 'all' group permission to the AMI, making it publicly accessible '''
         
         if 'groups' in self._launch_perms and any("all" in groups for groups in self._launch_perms['groups']):
-            log.info('AMI already public, nothing to do')
+            log.debug('AMI already public, nothing to do')
             return True
         
         log.info('Making AMI %s public', self._ami_id)
@@ -74,16 +71,17 @@ class Distami(object):
             self._launch_perms = self._image.get_launch_permissions()
             return res
         
-        log.info('AMI is already not public')
-        return True    
-    
+        log.debug('AMI is already not public')
+        return True
     
     
     def make_snapshot_public(self):
         ''' Makes a snapshot public '''
         
         snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
-        log.debug('Sanpshot details: %s', vars(snapshot))
+        log.debug('Snapshot details: %s', vars(snapshot))
+
+        log.info('Making snapshot %s public', self._snapshot_id)
         return snapshot.share(groups=['all'])
     
     
@@ -91,7 +89,9 @@ class Distami(object):
         ''' Removes the 'all' group permission from the snapshot '''
         
         snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
-        log.debug('Sanpshot details: %s', vars(snapshot))
+        log.debug('Snapshot details: %s', vars(snapshot))
+        
+        log.info('Making snapshot %s non-public', self._snapshot_id)
         return snapshot.unshare(groups=['all'])
 
 
@@ -111,16 +111,16 @@ class Distami(object):
         dest_conn.create_tags(copied_ami_id, self._image.tags)
         
         # Also copy snapshot tags to new snapshot
-        log.info('Copying Snapshot tags...')
+        log.info('Copying snapshot tags...')
         copied_snapshot_id = copied_image.block_device_mapping['/dev/sda1'].snapshot_id
         snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
         dest_conn.create_tags(copied_snapshot_id, snapshot.tags)
 
-        log.info('Copy complete')
+        log.info('Copy to %s complete', region)
         return copied_ami_id
-        
-        
-     
+
+
+
 class Logging(object):
     # Logging formats
     _log_simple_format = '%(asctime)s [%(levelname)s] %(message)s'

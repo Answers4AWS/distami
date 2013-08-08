@@ -40,7 +40,7 @@ def get_ami(conn, ami_id):
 
 
 def get_snapshot(conn, snapshot_id):
-    ''' Gets a single Snapshot as a boto.ec2.snapshot.Snapshot object '''
+    ''' Gets a single snapshot as a boto.ec2.snapshot.Snapshot object '''
     
     try:
         snapshots = conn.get_all_snapshots(snapshot_id)
@@ -68,17 +68,15 @@ def get_regions_to_copy_to(source_region):
     return regions
 
 
-
 def wait_for_ami_to_be_available(conn, ami_id):
     ''' Blocking wait until the AMI is available '''
     
     ami = get_ami(conn, ami_id)
-    log.debug('AMI state: %s', ami.state)
     log.debug('AMI details: %s', vars(ami))
     
     while ami.state != 'available':
         log.info("Waiting for AMI '%s' to become available", ami_id)
-        time.sleep(15)
+        time.sleep(30)
         ami = get_ami(conn, ami_id)
         
         if ami.state == 'failed':
