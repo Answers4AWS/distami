@@ -17,7 +17,7 @@ import logging
 import sys
 
 from distami.core import Distami, Logging
-from distami import utils
+from distami import __version__, utils
 from distami.exceptions import DistamiException
 
 from boto.utils import get_instance_metadata
@@ -57,6 +57,8 @@ def run():
                         help='Perform each copy to another region in parallel. The default is in serial which can take a long time')
     parser.add_argument('--verbose', '-v', action='count', 
                         help='enable verbose output (-vvv for more)')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__,
+                        help='display version number and exit')
     args = parser.parse_args()
     
     Logging().configure(args.verbose)

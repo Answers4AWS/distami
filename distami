@@ -19,6 +19,9 @@ DistAMI
 This script distributes an AMI by making it public
 """
 
+import sys, os
+sys.path.insert(0, os.path.abspath('lib'))
+
 from distami import cli
 
 if __name__ == '__main__':
