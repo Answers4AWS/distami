@@ -63,6 +63,9 @@ def get_regions_to_copy_to(source_region):
     for region in ec2.regions():
         if region.name == source_region:
             continue
+        # Filter out GovCloud
+        if region.name == 'us-gov-west-1':
+            continue
         regions.append(region.name)
         
     return regions
