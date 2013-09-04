@@ -1,6 +1,10 @@
 DistAMI
 =======
 
+.. image:: https://travis-ci.org/Answers4AWS/distami.png?branch=master
+   :target: https://travis-ci.org/Answers4AWS/distami
+   :alt: Build Status
+
 Distributes an Amazon Machine Image (AMI) by making it public in multiple regions
 
 Usage
