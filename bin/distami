@@ -20,7 +20,7 @@ This script distributes an AMI by making it public
 """
 
 import sys, os
-sys.path.insert(0, os.path.abspath('lib'))
+sys.path.insert(0, os.path.abspath('..'))
 
 from distami import cli
 

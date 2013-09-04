@@ -17,7 +17,7 @@
 distutils/setuptools install script for DistAMI
 """
 
-import sys, os
+import sys
 major, minor = sys.version_info[0:2]
 if major != 2 or minor < 7:
     print 'DistAMI requires Python 2.7.x'
@@ -25,14 +25,12 @@ if major != 2 or minor < 7:
 
 from distribute_setup import use_setuptools
 use_setuptools()
-from setuptools import setup
+from setuptools import setup, find_packages
 
-sys.path.insert(0, os.path.abspath('lib'))
 import distami
 
-requires = [
-    'boto>=2.7'
-]
+with open('requirements.txt') as fh:
+    requires = [requirement.strip() for requirement in fh]
 
 entry_points = {
     'console_scripts': [
@@ -40,8 +38,9 @@ entry_points = {
     ]
 }
 
-packages = [
-    'distami'
+exclude_packages = [
+    'tests',
+    'tests.*',
 ]
 
 setup(
@@ -52,8 +51,8 @@ setup(
     author=distami.__author__,
     author_email='info@answersforaws.com',
     url='https://github.com/Answers4AWS/distami',
-    packages=packages,
-    package_dir={'distami': 'lib/distami'},
+    packages=find_packages(exclude=exclude_packages),
+    package_dir={'distami': 'distami'},
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,
