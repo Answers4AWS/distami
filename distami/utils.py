@@ -25,11 +25,21 @@ log = logging.getLogger(__name__)
 def get_ami(conn, ami_id):
     ''' Gets a single AMI as a boto.ec2.image.Image object '''
     
-    try:
-        images = conn.get_all_images(ami_id)
-    except boto.exception.EC2ResponseError:
-        msg = "Could not find AMI '%s' in region '%s'" % (ami_id, conn.region.name)
-        raise DistamiException(msg)
+    attempts = 0
+    max_attempts = 5
+    while (attempts < max_attempts):
+        try:
+            attempts += 1
+            images = conn.get_all_images(ami_id)
+        except boto.exception.EC2ResponseError:
+            msg = "Could not find AMI '%s' in region '%s'" % (ami_id, conn.region.name)
+            if attempts < max_attempts:
+                # The API call to initiate an AMI copy is not blocking, so the
+                # copied AMI may not be available right away
+                log.debug(msg + ' so waiting 5 seconds and retrying')
+                time.sleep(5)
+            else:
+                raise DistamiException(msg)
     
     log.debug("Found AMIs: %s", images)
     if len(images) != 1:
