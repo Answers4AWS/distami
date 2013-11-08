@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-distutils/setuptools install script for DistAMI
+setuptools install script for DistAMI
 """
 
 import sys
@@ -23,8 +23,6 @@ if major != 2 or minor < 7:
     print 'DistAMI requires Python 2.7.x'
     sys.exit(1)
 
-from distribute_setup import use_setuptools
-use_setuptools()
 from setuptools import setup, find_packages
 
 import distami
