@@ -34,28 +34,34 @@ def _fail(message="Unknown failure", code=1):
     sys.exit(code)
 
 
-def copy(ami_region_pair):
+def copy(ami_region_pair, args):
     ''' Copies distami to the given region '''
     
     distami = ami_region_pair[0]
     to_region = ami_region_pair[1]
     copied_ami_id = distami.copy_to_region(to_region)
     ami_cp = Distami(copied_ami_id, to_region)
-    ami_cp.make_ami_public()
-    ami_cp.make_snapshot_public()
+    if args.non_public:
+        distami.make_ami_non_public()
+        distami.make_snapshot_non_public()
+    else:
+        ami_cp.make_ami_public()
+        ami_cp.make_snapshot_public()
     
 
 def run():
-    parser = argparse.ArgumentParser(description='Distributes an AMI by making it public.')
+    parser = argparse.ArgumentParser(description='Distributes an AMI by copying it to one, many, or all AWS regions, and by optionally making the AMIs and Snapshots public.')
     parser.add_argument('ami_id', metavar='AMI_ID', 
                         help='the source AMI ID to distribute. E.g. ami-1234abcd')
     parser.add_argument('--region', metavar='REGION', 
                         help='the region the AMI is in (default is current region of EC2 instance this is running on). E.g. us-east-1')
     parser.add_argument('--to', metavar='REGIONS', 
                         help='comma-separated list of regions to copy the AMI to. The default is all regions. E.g. us-east-1,us-west-1,us-west-2')
+    parser.add_argument('--non-public', action='store_true', default=False, 
+                        help='Copies the AMIs to other regions, but does not make the AMIs or snapshots public. Bad karma, but good for AMIs that need to be private/internal only')
     parser.add_argument('-p', '--parallel', action='store_true', default=False, 
                         help='Perform each copy to another region in parallel. The default is in serial which can take a long time')
-    parser.add_argument('--verbose', '-v', action='count', 
+    parser.add_argument('-v', '--verbose', action='count', 
                         help='enable verbose output (-vvv for more)')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__,
                         help='display version number and exit')
@@ -81,8 +87,9 @@ def run():
 
     try:
         distami = Distami(args.ami_id, ami_region)
-        distami.make_ami_public()
-        distami.make_snapshot_public()
+        if not args.non_public:
+            distami.make_ami_public()
+            distami.make_snapshot_public()
         
         if args.to and args.to != 'all':
             # TODO It is probably worth sanity checking this for typos
@@ -97,7 +104,7 @@ def run():
             log.debug(pairs)
 
             # Copy to regions in parallel
-            log.info('Copying in parallel. Hold on to your hats...')
+            log.info('Copying in parallel. Hold on to your hat...')
             pool = Pool(processes=8)
             pool.map(copy, pairs)
             pool.close()
@@ -105,7 +112,7 @@ def run():
         else:
             # Copy to regions one at a time
             for region in to_regions:
-                copy([distami, region])
+                copy([distami, region], args)
         
     except DistamiException as e:
         _fail(e.message)
