@@ -75,7 +75,15 @@ class Distami(object):
         log.debug('AMI is already not public')
         return True
     
-    
+    def share_ami_with_accounts(self, account_ids):
+        ''' Shares an AMI with the supplied list of AWS Account IDs '''
+        
+        log.info('Sharing AMI %s with AWS Accounts %s', self._ami_id, account_ids)
+
+        res = self._image.set_launch_permissions(user_ids=account_ids)
+        self._launch_perms = self._image.get_launch_permissions()
+        return res
+       
     def make_snapshot_public(self):
         ''' Makes a snapshot public '''
         
@@ -96,6 +104,16 @@ class Distami(object):
         return snapshot.unshare(groups=['all'])
 
 
+    def share_snapshot_with_accounts(self, account_ids):
+        ''' Shares a snapshot with the supplied list of AWS Account IDs '''
+        
+        snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
+        log.debug('Snapshot details: %s', vars(snapshot))
+
+        log.info('Sharing snapshot %s with AWS Accounts %s', self._snapshot_id, account_ids)
+        return snapshot.share(user_ids=account_ids)
+    
+    
     def copy_to_region(self, region):
         ''' Copies this AMI to another region '''
         
