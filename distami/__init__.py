@@ -13,4 +13,4 @@
 # limitations under the License.
 
 __author__ = 'Peter Sankauskas'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
