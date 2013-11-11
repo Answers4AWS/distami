@@ -34,11 +34,12 @@ def _fail(message="Unknown failure", code=1):
     sys.exit(code)
 
 
-def copy(ami_region_pair, args):
+def copy(param_array):
     ''' Copies distami to the given region '''
     
-    distami = ami_region_pair[0]
-    to_region = ami_region_pair[1]
+    distami = param_array[0]
+    to_region = param_array[1]
+    args = param_array[2]
     copied_ami_id = distami.copy_to_region(to_region)
     ami_cp = Distami(copied_ami_id, to_region)
 
@@ -115,20 +116,20 @@ def run():
         
         if args.parallel:
             # Get input to copy function 
-            f = lambda x,y: [x, y]
-            pairs = map(f, [distami] * len(to_regions), to_regions)
-            log.debug(pairs)
+            f = lambda x,y,z: [x, y, z]
+            param_array = map(f, [distami] * len(to_regions), to_regions, [args] * len(to_regions))
+            log.debug(param_array)
 
             # Copy to regions in parallel
             log.info('Copying in parallel. Hold on to your hat...')
             pool = Pool(processes=8)
-            pool.map(copy, pairs)
+            pool.map(copy, param_array)
             pool.close()
             pool.join()
         else:
             # Copy to regions one at a time
             for region in to_regions:
-                copy([distami, region], args)
+                copy([distami, region, args])
         
     except DistamiException as e:
         _fail(e.message)
