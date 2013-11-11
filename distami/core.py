@@ -32,7 +32,7 @@ class Distami(object):
         log.info("Looking for AMI %s in region %s", self._ami_id, self._ami_region)
         try:
             self._conn = ec2.connect_to_region(self._ami_region)
-        except boto.exception.NoAuthHandlerFound, e:
+        except boto.exception.NoAuthHandlerFound:
             log.error('Could not connect to region %s' % self._ami_region)
             log.critical('No AWS credentials found. To configure Boto, please read: http://boto.readthedocs.org/en/latest/boto_config_tut.html')
             raise DistamiException('No AWS credentials found.')            
