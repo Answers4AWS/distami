@@ -13,14 +13,12 @@
 # limitations under the License.
 
 import logging
-import pprint
+import boto
 
 from boto import ec2
 
 from distami.exceptions import * 
 from distami import utils 
-
-pp = pprint.PrettyPrinter(depth=2)
 
 __all__ = ('Distami', 'Logging')
 log = logging.getLogger(__name__)
@@ -32,7 +30,12 @@ class Distami(object):
         self._ami_region = ami_region
         
         log.info("Looking for AMI %s in region %s", self._ami_id, self._ami_region)
-        self._conn = ec2.connect_to_region(self._ami_region)            
+        try:
+            self._conn = ec2.connect_to_region(self._ami_region)
+        except boto.exception.NoAuthHandlerFound, e:
+            log.error('Could not connect to region %s' % self._ami_region)
+            log.critical('No AWS credentials found. To configure Boto, please read: http://boto.readthedocs.org/en/latest/boto_config_tut.html')
+            raise DistamiException('No AWS credentials found.')            
         self._image = utils.wait_for_ami_to_be_available(self._conn, self._ami_id)
         log.debug('AMI details: %s', vars(self._image))
         
