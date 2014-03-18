@@ -49,7 +49,8 @@ Security
 "As a publisher of a public AMI, you are responsible for the initial security posture of the machine images 
 that you distribute...when an AMI is made public, it can be launched by customers who are not security 
 experts, and who are not familiar with the history and details of the AMI." Make sure to secure your AMI
-before distributing it publicly: [Public AMI Publishing: Hardening and Clean-up Requirements]
+before distributing it publicly: `Public AMI Publishing: Hardening and Clean-up Requirements 
+<https://aws.amazon.com/articles/9001172542712674>`__
 
 Examples
 --------
