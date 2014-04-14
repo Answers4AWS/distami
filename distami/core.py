@@ -130,13 +130,20 @@ class Distami(object):
         
         # Copy AMI tags to new AMI
         log.info('Copying tags to %s in %s', copied_ami_id, region)
-        dest_conn.create_tags(copied_ami_id, self._image.tags)
+        if self._image.tags:
+            dest_conn.create_tags(copied_ami_id, self._image.tags)
+        else:
+            log.info('AMI tags empty, nothing to copy')
         
         # Also copy snapshot tags to new snapshot
         copied_snapshot_id = copied_image.block_device_mapping['/dev/sda1'].snapshot_id
         snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
         log.info('Copying tags to %s in %s', copied_snapshot_id, region)
-        dest_conn.create_tags(copied_snapshot_id, snapshot.tags)
+
+        if snapshot.tags:
+            dest_conn.create_tags(copied_snapshot_id, snapshot.tags)
+        else:
+            log.info('Snapshot tags empty, nothing to copy')
 
         log.info('Copy to %s complete', region)
         return copied_ami_id
