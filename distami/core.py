@@ -44,8 +44,9 @@ class Distami(object):
         log.debug("Current launch permissions: %s", self._launch_perms)
         
         # Figure out the underlying snapshot
-        bdm = self._image.block_device_mapping['/dev/sda1']
-        log.debug('Block device mapping for /dev/sda1: %s', vars(bdm))
+        ami = utils.get_ami(self._conn, self._ami_id)
+        bdm = self._image.block_device_mapping[ami.root_device_name]
+        log.debug('Block device mapping for %s: %s', ami.root_device_name, vars(bdm))
         self._snapshot_id = bdm.snapshot_id
 
         log.info("Found AMI %s with snapshot %s", self._ami_id, self._snapshot_id)
@@ -136,7 +137,8 @@ class Distami(object):
             log.info('AMI tags empty, nothing to copy')
         
         # Also copy snapshot tags to new snapshot
-        copied_snapshot_id = copied_image.block_device_mapping['/dev/sda1'].snapshot_id
+        ami = utils.get_ami(self._conn, self._ami_id)
+        copied_snapshot_id = copied_image.block_device_mapping[ami.root_device_name].snapshot_id
         snapshot = utils.get_snapshot(self._conn, self._snapshot_id)
         log.info('Copying tags to %s in %s', copied_snapshot_id, region)
 
