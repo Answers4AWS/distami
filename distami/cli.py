@@ -51,7 +51,8 @@ def copy(param_array):
         ami_cp.make_snapshot_public()
 
     if args.accounts:
-        distami.share_ami_with_accounts(args.accounts)
+        ami_cp.share_ami_with_accounts(args.accounts)
+        ami_cp.share_snapshot_with_accounts(args.accounts)
     
 
 def run():
