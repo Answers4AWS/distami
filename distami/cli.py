@@ -117,13 +117,12 @@ def run():
         
         if args.parallel:
             # Get input to copy function 
-            f = lambda x,y,z: [x, y, z]
-            param_array = map(f, [distami] * len(to_regions), to_regions, [args] * len(to_regions))
+            param_array = zip([distami] * len(to_regions), to_regions, [args] * len(to_regions))
             log.debug(param_array)
 
             # Copy to regions in parallel
             log.info('Copying in parallel. Hold on to your hat...')
-            pool = Pool(processes=8)
+            pool = Pool(processes=len(to_regions))
             pool.map(copy, param_array)
             pool.close()
             pool.join()
