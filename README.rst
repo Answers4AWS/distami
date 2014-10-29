@@ -5,6 +5,14 @@ DistAMI
    :target: https://travis-ci.org/Answers4AWS/distami
    :alt: Build Status
 
+.. image:: https://pypip.in/d/distami/badge.png
+   :target: https://pypi.python.org/pypi/distami
+   :alt: PyPI Downloads
+
+.. image:: https://pypip.in/v/distami/badge.png
+   :target: https://pypi.python.org/pypi/distami
+   :alt: PyPI Version
+
 Distributes an AMI by copying it to one, many, or all AWS regions, and by optionally making the AMIs and Snapshots public or shared with specific AWS Accounts.
 
 Usage
