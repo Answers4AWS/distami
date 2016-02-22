@@ -76,6 +76,9 @@ def get_regions_to_copy_to(source_region):
         # Filter out GovCloud
         if region.name == 'us-gov-west-1':
             continue
+        # Filter out China
+        if region.name == 'cn-north-1':
+            continue
         regions.append(region.name)
         
     return regions
