@@ -5,11 +5,11 @@ DistAMI
    :target: https://travis-ci.org/Answers4AWS/distami
    :alt: Build Status
 
-.. image:: https://pypip.in/d/distami/badge.png
+.. image:: https://img.shields.io/pypi/dm/distami.svg
    :target: https://pypi.python.org/pypi/distami
    :alt: PyPI Downloads
 
-.. image:: https://pypip.in/v/distami/badge.png
+.. image:: https://img.shields.io/pypi/v/distami.svg
    :target: https://pypi.python.org/pypi/distami
    :alt: PyPI Version
 
